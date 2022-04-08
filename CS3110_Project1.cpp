@@ -55,7 +55,7 @@ float convertFloat(string num)
     }
     
     //User can use 'f' or 'F' at end of string to indicate this number is suppose to be a floating point number
-    //If the character is there then the string is recognized and no need to account for it in calculations 
+    //If the character is there then the string will recognized as a float and no need to account for it in calculations 
     int numLength = num.length();
     if (num[numLength - 1] == 'f' || num[numLength - 1] == 'F')
     {
