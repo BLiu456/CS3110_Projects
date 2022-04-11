@@ -6,17 +6,16 @@ Due Date: 4/11/2022
 Project 1: Recognizing floating point numbers 
 Used C++, Visual Studios 2019
 
-Note: Depending on compiler/system, the floating point number will be rounded after a certain amount of digits. On my system it rounds after 7 digits. 
-      Not really sure how to fix it, but a valid floating point number is still recognized so the program still works as intended.  
+Note:  C++ is accurate with floats for only about 6 to 7 digits.
 */
 #include <iostream>
 #include <vector>
-
 using namespace std;
 
 //Function prototypes 
 float convertFloat(string); //What will recognize the string input as a float
 float getDigit(char); //Helper functions for convertFloat
+bool spacerValidity(string, int, int, int);
 float posPowTen(int);
 float negPowTen(int);
 float calcWhole(vector<float>&);
@@ -24,19 +23,34 @@ float calcDecimal(vector<float>&);
 
 int main()
 {
+   
     string userNum = "";
-    cout << "Input a floating point number: ";
-    cin >> userNum;
+    bool again = true;
+    while (again)
+    {
+        cout << "Input a floating point number or 'q' to quit: ";
+        cin >> userNum;
 
-    try
-    {
-        float fltNum = convertFloat(userNum);
-        cout << "The number is recognized as: " << fltNum;
+        if (userNum != "q")
+        {
+            try
+            {
+                float fltNum = convertFloat(userNum);
+                cout << "The number is recognized as: " << fltNum;
+            }
+            catch(const char* e)
+            {
+                cout << e;
+            }
+        }
+        else
+        {
+            again = false;
+        }
+
+        cout << endl << endl; //Formating purposes
     }
-    catch(const char* e)
-    {
-        cout << e;
-    }
+    
 }
 
 float convertFloat(string num)
@@ -55,7 +69,7 @@ float convertFloat(string num)
     }
     
     //User can use 'f' or 'F' at end of string to indicate this number is suppose to be a floating point number
-    //If the character is there then the string will recognized as a float and no need to account for it in calculations 
+    //If the character is there then the string will be recognized as a float and no need to account for it in calculations 
     int numLength = num.length();
     if (num[numLength - 1] == 'f' || num[numLength - 1] == 'F')
     {
@@ -70,7 +84,21 @@ float convertFloat(string num)
 
     for (int i = startIndex; i < numLength; i++)
     {
-        if (num[i] == '.')
+        //Checking for special characters like '_', '.', and 'e'
+        if (num[i] == '_') //'_' is spacer character
+        {
+            //Making sure if the usage of '_' is valid
+            if (spacerValidity(num, startIndex, numLength, i))
+            {
+                continue; //If valid just continue with calculations
+            }
+            else
+            {
+                throw "The input is not recognized as a floating point number"; //Rejecting string
+            }
+            
+        }
+        else if (num[i] == '.')
         {
             isWhole = false;
             totalDot++;
@@ -84,19 +112,20 @@ float convertFloat(string num)
                 throw "The input is not recognized as a floating point number";
             }
         }
-        else if (num[i] == 'e')
+        else if (num[i] == 'e' || num[i] == 'E')
         {
             eindex = i;
             break;
         }
 
-        float value = getDigit(num[i]);
+        float value = getDigit(num[i]); //Get the number variation of character if possible
         
-        if (value == -1.0)
+        if (value == -1.0) //Was not a valid number
         {
             throw "The input is not recognized as a floating point number";
         }
 
+        //Calculating whole and decimal part seperately 
         if (isWhole)
         {
             wholePart.push_back(value);
@@ -109,10 +138,10 @@ float convertFloat(string num)
 
     float totalNum = calcWhole(wholePart) + calcDecimal(decimalPart);
 
-    if (eindex != -1)
+    if (eindex != -1) //Calculating scientific notation
     {
         //Check to see if the usage of e is valid
-        if (eindex == 0) //e can not be the first character
+        if (eindex == startIndex) //e can not be the first character
         {
             throw "The input is not recognized as a floating point number";
         }
@@ -137,6 +166,19 @@ float convertFloat(string num)
         int eDigits = numLength - eStart - 1;
         for (int i = eStart; i < numLength; i++)
         {
+            if (num[i] == '_') //'_' can be used in scientific notations similar to the before part
+            {
+                if (spacerValidity(num, eStart, numLength, i))
+                {
+                    eDigits--;
+                    continue; 
+                }
+                else
+                {
+                    throw "The input is not recognized as a floating point number"; 
+                }
+            }
+
             float value = getDigit(num[i]);
 
             if (value == -1)
@@ -165,7 +207,7 @@ float convertFloat(string num)
         totalNum *= -1.0;
     }
 
-    return totalNum; //If the input is recognized as a float, then return the floating point number
+    return totalNum; 
 }
 
 float getDigit(char num)
@@ -227,6 +269,33 @@ float negPowTen(int num)
     }
 
     return power;
+}
+
+bool spacerValidity(string num, int startIndex, int len, int i)
+{
+    //Conditions where the spacer character '_' is not valid
+    if (i == startIndex) //'_' can't be the first character
+    {
+        return false;
+    }
+    else if (i == len - 1) //'_' can't be the last character
+    {
+        return false;
+    }
+    else if (num[i - 1] == '.' || num[i + 1] == '.') //Can not be next to other special characters
+    {
+        return false;
+    }
+    else if (num[i - 1] == 'e' || num[i + 1] == 'e')
+    {
+        return false;
+    }
+    else if (num[i - 1] == 'E' || num[i + 1] == 'E')
+    {
+        return false;
+    }
+
+    return true;
 }
 
 float calcWhole(vector<float>& whole)
