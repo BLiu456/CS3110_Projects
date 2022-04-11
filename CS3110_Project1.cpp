@@ -1,7 +1,7 @@
 /*
 Name: Benjamin Liu
 Class: CS3110
-Due Date: 4/11/2022
+Due Date: 4/13/2022
 
 Project 1: Recognizing floating point numbers 
 Used C++, Visual Studios 2019
