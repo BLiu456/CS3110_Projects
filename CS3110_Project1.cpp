@@ -151,6 +151,7 @@ float convertFloat(string numStr)
             {
                 throw "The input is not recognized as a valid floating point number";
             }
+            prevChar = numStr[i];
             break;
 
         case '+':
@@ -167,6 +168,7 @@ float convertFloat(string numStr)
             {
                 throw "The input is not recognized as a valid floating point number";
             }
+            prevChar = numStr[i];
             break;
 
         case '_': //Is meant to seperate two numbers
@@ -209,6 +211,10 @@ float convertFloat(string numStr)
                 throw "The input is not recognized as a valid floating point number";
             }
             else if (prevChar == '_')
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == 'e' || prevChar == 'E')
             {
                 throw "The input is not recognized as a valid floating point number";
             }
