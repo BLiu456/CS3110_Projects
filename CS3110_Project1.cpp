@@ -56,6 +56,7 @@ float convertFloat(string numStr)
     float totalNum = 0.0;
     int numDot = 0;
     int numE = 0;
+    int numSpacer = 0; 
     bool hasF = false;
     bool inWholeState = true;
     bool inEState = false;
@@ -92,6 +93,7 @@ float convertFloat(string numStr)
                 ePart.push_back(getDigit(numStr[i]));
             }
 
+            numSpacer = 0; //Reset spacer count
             prevChar = numStr[i];
             break;
 
@@ -173,6 +175,7 @@ float convertFloat(string numStr)
 
         case '_': //Is meant to seperate two numbers
             //Conditions where the spacer character '_' is not valid
+            numSpacer++;
             if (i == 0) //'_' can't be the first character
             {
                 throw "The input is not recognized as a valid floating point number";
@@ -188,12 +191,12 @@ float convertFloat(string numStr)
             else if (prevChar == 'e' || prevChar == 'E')
             {
                 throw "The input is not recognized as a valid floating point number";
-            }
-            else if (prevChar == '_')
+            }         
+            else if (prevChar == '+' || prevChar == '-')
             {
                 throw "The input is not recognized as a valid floating point number";
             }
-            else if (prevChar == '+' || prevChar == '-')
+            else if (numSpacer > 2) //Only 2 consecutive spacers are allowed. Resets when a valid digit is read.
             {
                 throw "The input is not recognized as a valid floating point number";
             }
