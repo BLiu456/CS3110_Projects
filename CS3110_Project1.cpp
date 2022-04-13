@@ -14,16 +14,15 @@ using namespace std;
 
 //Function prototypes 
 float convertFloat(string); //What will recognize the string input as a float
-float getDigit(char); //Helper functions for convertFloat
-bool spacerValidity(string, int, int, int);
+int getDigit(char); //Helper functions for convertFloat
 float posPowTen(int);
 float negPowTen(int);
 float calcWhole(vector<float>&);
 float calcDecimal(vector<float>&);
+int calcE(vector<int>&);
 
 int main()
-{
-   
+{  
     string userNum = "";
     bool again = true;
     while (again)
@@ -49,203 +48,262 @@ int main()
         }
 
         cout << endl << endl; //Formating purposes
-    }
-    
+    }  
 }
 
-float convertFloat(string num)
+float convertFloat(string numStr)
 {
-    //Check first character to see if it is positive or negative, not sign in the front will be treated as positive
-    bool isNegative = false;
-    int startIndex = 0;
-    if (num[0] == '-')
-    {
-        isNegative = true;
-        startIndex = 1;
-    }
-    else if (num[0] == '+')
-    {
-        startIndex = 1;
-    }
-    
-    //User can use 'f' or 'F' at end of string to indicate this number is suppose to be a floating point number
-    //If the character is there then the string will be recognized as a float and no need to account for it in calculations 
-    int numLength = num.length();
-    if (num[numLength - 1] == 'f' || num[numLength - 1] == 'F')
-    {
-        numLength--;
-    }
-
-    int totalDot = 0; //Can only have a certain number of '.' so keep track of it
-    int eindex = -1; //e to indicate scientific notation
-    bool isWhole = true; //Flag variable for when calculating the whole number part or the decimal part
+    float totalNum = 0.0;
+    int numDot = 0;
+    int numE = 0;
+    bool hasF = false;
+    bool inWholeState = true;
+    bool inEState = false;
+    bool eNeg = false;
+    char prevChar = ' ';
     vector<float> wholePart;
     vector<float> decimalPart;
+    vector<int> ePart;
 
-    for (int i = startIndex; i < numLength; i++)
+    for (int i = 0; i < numStr.length(); i++)
     {
-        //Checking for special characters like '_', '.', and 'e'
-        if (num[i] == '_') //'_' is spacer character
+        switch (numStr[i]) //Examine character by character
         {
-            //Making sure if the usage of '_' is valid
-            if (spacerValidity(num, startIndex, numLength, i))
+        case '0': //Digits 0 - 9
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            if (inWholeState == true)//Whole state
             {
-                continue; //If valid just continue with calculations
+                wholePart.push_back(getDigit(numStr[i]));  //Push numbers into vector. calculate total at end
+            }
+            else if (inWholeState == false && inEState == false)//Decimal state
+            {
+                decimalPart.push_back(getDigit(numStr[i]));
+            }
+            else if (inEState == true)//Exponent state
+            {
+                ePart.push_back(getDigit(numStr[i]));
+            }
+
+            prevChar = numStr[i];
+            break;
+
+        case '.': //Transition to decimal 
+            inWholeState = false;
+            numDot++;
+            if (numDot > 1) //If there are more than 1 '.', it is not valid
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (inEState) //No decimals for the e part
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '_') //Can not procceed a '.'
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            prevChar = numStr[i];
+            break;
+
+        case 'e': //Transition to exponent 
+        case 'E':
+            inWholeState = false;
+            inEState = true;
+            numE++;
+            if (numE > 1) //If more than one e then it is not valid
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '_') //Can not procceed a '_'
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (i == 0) //e can not be the first character
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (i == numStr.length() - 1) //e can not be the last character
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            prevChar = numStr[i];
+            break;
+
+        case '-':
+            if (prevChar == 'e' || prevChar == 'E') //Must procceed an exponent indicator
+            {
+                eNeg = true;
             }
             else
             {
-                throw "The input is not recognized as a floating point number"; //Rejecting string
+                throw "The input is not recognized as a valid floating point number";
             }
-            
-        }
-        else if (num[i] == '.')
-        {
-            isWhole = false;
-            totalDot++;
-            
-            if (totalDot <= 1)
+
+            if (i == numStr.length() - 1) //Can't be the last character
             {
-                continue;
+                throw "The input is not recognized as a valid floating point number";
             }
-            else //Can not have more than one decimal point, if more reject the string
-            {
-                throw "The input is not recognized as a floating point number";
-            }
-        }
-        else if (num[i] == 'e' || num[i] == 'E')
-        {
-            eindex = i;
             break;
-        }
 
-        float value = getDigit(num[i]); //Get the number variation of character if possible
-        
-        if (value == -1.0) //Was not a valid number
-        {
-            throw "The input is not recognized as a floating point number";
-        }
+        case '+':
+            if (prevChar == 'e' || prevChar == 'E') //Must procceed an exponent indicator
+            {
+                eNeg = false;
+            }
+            else
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
 
-        //Calculating whole and decimal part seperately 
-        if (isWhole)
-        {
-            wholePart.push_back(value);
-        }
-        else
-        {
-            decimalPart.push_back(value);
+            if (i == numStr.length() - 1) //Can't be the last character
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            break;
+
+        case '_': //Is meant to seperate two numbers
+            //Conditions where the spacer character '_' is not valid
+            if (i == 0) //'_' can't be the first character
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (i == numStr.length() - 1) //'_' can't be the last character
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '.') //Can not be next to other special characters
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == 'e' || prevChar == 'E')
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '_')
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '+' || prevChar == '-')
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+
+            prevChar = numStr[i];
+            break;
+
+        case 'f': //float type suffix
+        case 'F':
+        case 'd':
+        case 'D':
+            hasF = true;
+            if (i != numStr.length() - 1) //Must be the last character 
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '_')
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+            else if (prevChar == '+' || prevChar == '-')
+            {
+                throw "The input is not recognized as a valid floating point number";
+            }
+
+            prevChar = numStr[i];
+            break;
+
+        default: //Any invalid character
+            throw "The input is not recognized as a valid floating point number";
         }
     }
 
-    float totalNum = calcWhole(wholePart) + calcDecimal(decimalPart);
-
-    if (eindex != -1) //Calculating scientific notation
+    //A number is in a valid floating point form, if it has at least a digit and either one of a '.', 'e', or 'f'
+    //Correct usage of these special characters should of been checked in the switch statement above
+    bool hasDigit = false;
+    if (wholePart.size() != 0 || decimalPart.size() != 0) 
     {
-        //Check to see if the usage of e is valid
-        if (eindex == startIndex) //e can not be the first character
-        {
-            throw "The input is not recognized as a floating point number";
-        }
-        else if (eindex == numLength - 1) //e can not be the last character and must have numbers after it
-        {
-            throw "The input is not recognized as a floating point number";
-        }
+        hasDigit = true;
+    }
 
-        bool eNeg = false;
-        int eStart = eindex + 1;
-        if (num[eStart] == '-')
-        {
-            eNeg = true;
-            eStart++;
-        }
-        else if (num[eStart] == '+')
-        {
-            eStart++;
-        }
+    bool validForm = false;
+    if (numDot == 1 && hasDigit)
+    {
+        validForm = true;
+    }
+    else if (numE == 1 && hasDigit)
+    {
+        validForm = true;
+    }
+    else if (hasF && hasDigit)
+    {
+        validForm = true;
+    }
 
-        float ePart = 0;
-        int eDigits = numLength - eStart - 1;
-        for (int i = eStart; i < numLength; i++)
-        {
-            if (num[i] == '_') //'_' can be used in scientific notations similar to the before part
-            {
-                if (spacerValidity(num, eStart, numLength, i))
-                {
-                    eDigits--;
-                    continue; 
-                }
-                else
-                {
-                    throw "The input is not recognized as a floating point number"; 
-                }
-            }
-
-            float value = getDigit(num[i]);
-
-            if (value == -1)
-            {
-                throw "The input is not recognized as a floating point number";
-            }
-
-            float power = posPowTen(eDigits);
-            eDigits--;
-            ePart += value * power;
-        }
-
+    if (validForm)
+    {
+        //calculating total 
+        totalNum = calcWhole(wholePart) + calcDecimal(decimalPart);
         if (eNeg)
         {
-            totalNum *= negPowTen(ePart);
+            totalNum *= negPowTen(calcE(ePart));
         }
         else
         {
-            totalNum *= posPowTen(ePart);
+            totalNum *= posPowTen(calcE(ePart));
         }
-
     }
-
-    if (isNegative)
+    else
     {
-        totalNum *= -1.0;
+        throw "The input is not recognized as a valid floating point number";
     }
 
     return totalNum; 
 }
 
-float getDigit(char num)
+int getDigit(char num) //Returns a number based on the corresponding char
 {
     switch (num)
     {
     case '1':
-        return 1.0;
+        return 1;
 
     case '2':
-        return 2.0;
+        return 2;
 
     case '3':
-        return 3.0;
+        return 3;
 
     case '4':
-        return 4.0;
+        return 4;
 
     case '5':
-        return 5.0;
+        return 5;
 
     case '6':
-        return 6.0;
+        return 6;
 
     case '7':
-        return 7.0;
+        return 7;
 
     case '8':
-        return 8.0;
+        return 8;
 
     case '9':
-        return 9.0;
+        return 9;
 
     case '0':
-        return 0.0; 
+        return 0; 
 
     default:
-        return -1.0; //Not a valid character 
+        return -1; //Not a valid character 
     }
 }
 
@@ -269,33 +327,6 @@ float negPowTen(int num)
     }
 
     return power;
-}
-
-bool spacerValidity(string num, int startIndex, int len, int i)
-{
-    //Conditions where the spacer character '_' is not valid
-    if (i == startIndex) //'_' can't be the first character
-    {
-        return false;
-    }
-    else if (i == len - 1) //'_' can't be the last character
-    {
-        return false;
-    }
-    else if (num[i - 1] == '.' || num[i + 1] == '.') //Can not be next to other special characters
-    {
-        return false;
-    }
-    else if (num[i - 1] == 'e' || num[i + 1] == 'e')
-    {
-        return false;
-    }
-    else if (num[i - 1] == 'E' || num[i + 1] == 'E')
-    {
-        return false;
-    }
-
-    return true;
 }
 
 float calcWhole(vector<float>& whole)
@@ -323,6 +354,21 @@ float calcDecimal(vector<float>& dec)
         numDecimals++;
         float power = negPowTen(numDecimals);
         total += dec[i] * power;
+    }
+
+    return total;
+}
+
+int calcE(vector<int>& e)
+{
+    int numDigits = e.size() - 1;
+    int total = 0.0;
+
+    for (int i = 0; i < e.size(); i++)
+    {
+        float power = posPowTen(numDigits);
+        numDigits--;
+        total += e[i] * power;
     }
 
     return total;
