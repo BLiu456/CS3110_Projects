@@ -1,8 +1,14 @@
 /*
 Name: Benjamin Liu
 Assignment: CS3110 Project 2
+Language used is C++, and coded in Visual Studio 2022
+
 Notes: A calculator for floating point numbers, each operator (+ - * /) will be considered binary
        Unary operations (such as + and -) are not supported
+       Spaces are allowed in the expression but they must only be between an operand and an operator or parentheses
+       There can be any number of spaces between the operator and operand 
+       A vaild use of spaces would look like this: ( 1f +   1f)  * 2f - 1f  +2f
+       An invalid use of spaces would be if it was between digits (i.e. 1  1.0 + 2 .0 would be invalid)
        Code from project 1 is marked with comments
 */
 
@@ -58,7 +64,7 @@ int main()
 /*
     This function simply attempts to convert the infix expression into a postfix expression.
     The postfix expression will be returned as a string.
-    This function was based off a PDA design with one stack.
+    This function was based off a PDA design with one stack. Refer to CS3310-Postfix PDA.pdf file for the design.
     Will not recognize expression if an invalid character was used or if a parentheses was not used correctly.
     Validity of floating point numbers and whether the expression was entered correctly will be checked in the eval() function.    
 */
@@ -67,90 +73,97 @@ string getPostfix(string infix)
 	stack<char> operatorStack;
 	string postfix = "";
 	int parenthesesCount = 0;
+    bool expectOperator = false; //expectOperator and prevIsOperator is used to help verify the usage of spaces
+    bool prevIsOperator = true;  //Will set initially to true since it is okay to start off an expression with spaces
 
     //Based on character input, perform a certain task to mimic a PDA
 	for (int i = 0; i < infix.length(); i++)
 	{
-		switch (infix[i]) 
-		{ 
-		case '+': //+ and - have the same precedence so handle these inputs the same
-		case '-':
-			if (i != 0)
-			{
-				if (infix[i - 1] == 'e' || infix[i - 1] == 'E') //Determines if the +- belongs to the e in float numbers
-				{
-					postfix.insert(postfix.length(), 1, infix[i]);
-					break;
-				}
-			}
-			
-			postfix.append(" ");
-			if (!operatorStack.empty())
-			{
-				if (operatorStack.top() == '(') //Can be pushed into stack if ( is on top
-				{
-					operatorStack.push(infix[i]);
-				}
-				else if (operatorStack.top() == '*' || operatorStack.top() == '/') //Because +- has the lowest precedence pop the top operand into the expression 
-				{                                                                  //and then push +- into stack
-					postfix.insert(postfix.length(), 1, operatorStack.top());
-					postfix.append(" ");
+        switch (infix[i])
+        {
+        case '+': //+ and - have the same precedence so handle these inputs the same
+        case '-':
+            if (i != 0)
+            {
+                if (infix[i - 1] == 'e' || infix[i - 1] == 'E') //Determines if the +- belongs to the e in float numbers
+                {
+                    postfix.insert(postfix.length(), 1, infix[i]);
+                    break;
+                }
+            }
 
-					operatorStack.pop();
-					operatorStack.push(infix[i]);
-				}
-				else if (operatorStack.top() == '+' || operatorStack.top() == '-') //Same precedence, perform similar steps from the else if above 
-				{
-					postfix.insert(postfix.length(), 1, operatorStack.top());
-					postfix.append(" ");
+            postfix.append(" ");
+            if (!operatorStack.empty())
+            {
+                if (operatorStack.top() == '(') //Can be pushed into stack if ( is on top
+                {
+                    operatorStack.push(infix[i]);
+                }
+                else if (operatorStack.top() == '*' || operatorStack.top() == '/') //Because +- has the lowest precedence pop the top operand into the expression 
+                {                                                                  //and then push +- into stack
+                    postfix.insert(postfix.length(), 1, operatorStack.top());
+                    postfix.append(" ");
 
-					operatorStack.pop();
-					operatorStack.push(infix[i]);
-				}
-			}
-			else
-			{
-				operatorStack.push(infix[i]);
-			}
-			break;
+                    operatorStack.pop();
+                    operatorStack.push(infix[i]);
+                }
+                else if (operatorStack.top() == '+' || operatorStack.top() == '-') //Same precedence, perform similar steps from the else if above 
+                {
+                    postfix.insert(postfix.length(), 1, operatorStack.top());
+                    postfix.append(" ");
 
-		case '*': //* and / have the same precedence so handle these inputs the same
-		case '/':
-			postfix.append(" ");
-			if (!operatorStack.empty())
-			{
+                    operatorStack.pop();
+                    operatorStack.push(infix[i]);
+                }
+            }
+            else
+            {
+                operatorStack.push(infix[i]);
+            }
+
+            prevIsOperator = true;
+            break;
+
+        case '*': //multiplication and division have the same precedence so handle these inputs the same
+        case '/':
+            postfix.append(" ");
+            if (!operatorStack.empty())
+            {
                 if (operatorStack.top() == '(')
                 {
                     operatorStack.push(infix[i]);
-                }   
+                }
                 else if (operatorStack.top() == '*' || operatorStack.top() == '/') //Same precedence
-				{
-					postfix.insert(postfix.length(), 1, operatorStack.top());
-					postfix.append(" ");
+                {
+                    postfix.insert(postfix.length(), 1, operatorStack.top());
+                    postfix.append(" ");
 
-					operatorStack.pop();
-					operatorStack.push(infix[i]);
-				}	
-				else if(operatorStack.top() == '+' || operatorStack.top() == '-') //When a operator of lower precedence is on top, can simply push into stack
-				{
-					operatorStack.push(infix[i]);
-				}
-			}
-			else 
-			{
-				operatorStack.push(infix[i]);
-			}
-			break;
+                    operatorStack.pop();
+                    operatorStack.push(infix[i]);
+                }
+                else if (operatorStack.top() == '+' || operatorStack.top() == '-') //When a operator of lower precedence is on top, can simply push into stack
+                {
+                    operatorStack.push(infix[i]);
+                }
+            }
+            else
+            {
+                operatorStack.push(infix[i]);
+            }
 
-		case '(': //Push ( into the stack, acts as a sort of precedence resetter
-			operatorStack.push(infix[i]);
-			parenthesesCount++;
-			break;
+            prevIsOperator = true;
+            break;
 
-		case ')':
-            if (parenthesesCount > 0) 
-			{
-				postfix.append(" ");
+        case '(': //Push ( into the stack, acts as a sort of precedence resetter
+            operatorStack.push(infix[i]);
+            parenthesesCount++;
+            prevIsOperator = true;
+            break;
+
+        case ')':
+            if (parenthesesCount > 0)
+            {
+                postfix.append(" ");
                 if (!operatorStack.empty())
                 {
                     while (operatorStack.top() != '(') //Pop all operators in stack until the ( is reached
@@ -167,36 +180,54 @@ string getPostfix(string infix)
                 {
                     throw "Missing parentheses";
                 }
-			}
-			else //If parenthesesCount <= 0 then there is a missing ( 
-			{
-				throw "Missing parentheses";
-			}
-			break;
-		
-		case ' ': //Spaces are accepted and will simply do nothing with them
-			break;
+            }
+            else //If parenthesesCount <= 0 then there is a missing ( 
+            {
+                throw "Missing parentheses";
+            }
 
-		//The valid characters used in floating-point numbers
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-		case 'd':
-		case 'D':
-		case 'e':
-		case 'E':
-		case 'f':
-		case 'F':
-		case '.':
-		case '_':
-			postfix.insert(postfix.length(), 1, infix[i]);
+            prevIsOperator = true;
+            break;
+
+        case ' ': //Spaces are accepted but must be between an operator and operand. If used validly then the program will simply do nothing with it.
+            if (prevIsOperator) //If previous character was an operator then the next expected character is a digit
+            {
+                expectOperator = false;
+            }
+            else //If the previous char was not an operator then it was a digit, so the next char should be an operator
+            {
+                expectOperator = true;
+            }
+            break;
+
+            //The valid characters used in floating-point numbers
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case 'd':
+        case 'D':
+        case 'e':
+        case 'E':
+        case 'f':
+        case 'F':
+        case '.':
+        case '_':
+            if (expectOperator == false)
+            {
+                postfix.insert(postfix.length(), 1, infix[i]);
+                prevIsOperator = false;
+            }
+            else
+            {
+                throw "Invalid use of spaces";
+            }
 			break;
 
 		default: //Any other character is invalid 
@@ -222,7 +253,7 @@ string getPostfix(string infix)
 /*
     eval() will take in a postfix expression, and will attempt to calculate it. 
     Returns the result as a floating point number.
-    Based off a PDA design with one stack.
+    Based off a PDA design with one stack. Refer to CS3310-Eval PDA.pdf file for the design.
 */
 float eval(string postfix)
 {
@@ -352,7 +383,14 @@ float eval(string postfix)
 		}
 	}
 
-	return numStack.top(); //The top and only number left in the stack is the result of the expression.
+    if (numStack.size() == 1) //The top and only number left in the stack is the result of the expression.
+    {
+        return numStack.top(); 
+    }
+    else
+    {
+        throw "Not a valid expression";
+    }
 }
 
 
