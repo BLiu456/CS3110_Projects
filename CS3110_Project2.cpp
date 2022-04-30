@@ -370,7 +370,7 @@ float eval(string postfix)
                 val2 = numStack.top();
                 numStack.pop();
 
-                if (val1 == 0.0) //Handling zero by division error
+                if (val1 == 0.0) //Handling divison by zero error
                 {
                     throw "Divison by Zero error";
                 }
