@@ -370,6 +370,11 @@ float eval(string postfix)
                 val2 = numStack.top();
                 numStack.pop();
 
+                if (val1 == 0.0) //Handling zero by division error
+                {
+                    throw "Divison by Zero error";
+                }
+
                 numStack.push(val2 / val1);
             }
             else
